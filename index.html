@@ -4,7 +4,42 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>CloudBar Shop</title>
-<style>
+<style>/* Выезжающая корзина */
+.drawer{
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 380px; max-width: 100%;
+  background:#14161b;
+  border-left:1px solid #2a2d35;
+  transform: translateX(100%);        /* скрыта по умолчанию */
+  transition: transform .25s ease;
+  z-index: 1000;
+}
+.drawer_open{ transform: translateX(0); }
+
+/* Шапка корзины */
+.drawer header{
+  position: sticky; top: 0;
+  display:flex; align-items:center; justify-content:space-between;
+  background:#14161b;
+  padding:12px 16px; z-index:1;
+}
+.drawer header .close{
+  width:34px; height:34px;
+  border:0; border-radius:8px; cursor:pointer;
+  background:#2a2d35; color:#fff;
+}
+
+/* Оверлей под корзиной */
+.overlay{
+  position:fixed; inset:0;
+  background:#0008;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s;
+  z-index: 999;
+}
+.overlay_show{ opacity:1; pointer-events:auto }
+
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#0e0f12;color:#eaeaea}
   header{position:sticky;top:0;background:#14161b;border-bottom:1px solid #222;padding:12px 16px;display:flex;gap:12px;align-items:center;z-index:9}
   input[type=search]{flex:1;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#0e0f12;color:#eaeaea}
@@ -132,8 +167,29 @@ function renderCart(){
   const total = items.reduce((s,i)=>s+i.sum,0);
   totalBox.textContent = 'Итого: '+ money(total);
 }
-function openCart(){ drawer.classList.add('open'); }
-function closeCart(){ drawer.classList.remove('open'); }
+// добавь рядом с другими const'ами:
+const overlay = document.getElementById('overlay');
+const openBtn  = document.getElementById('openCart');   // если есть кнопка, которая открывает корзину
+const closeBtn = document.getElementById('closeCart');  // если есть крестик в шапке корзины
+
+function openCart() {
+  drawer.classList.add('open');          // твой класс для открытия панели
+  overlay.classList.add('overlay_show'); // показываем затемнение
+  document.body.classList.add('body-lock'); // блокируем прокрутку страницы
+}
+
+function closeCart() {
+  drawer.classList.remove('open');
+  overlay.classList.remove('overlay_show');
+  document.body.classList.remove('body-lock');
+}
+
+// обработчики (если их ещё нет ниже по коду)
+openBtn  && openBtn.addEventListener('click', openCart);
+closeBtn && closeBtn.addEventListener('click', closeCart);
+overlay.addEventListener('click', closeCart);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCart(); });
+
 
 tabs.addEventListener('click',e=>{
   const cat=e.target.dataset.cat; if(!cat) return;
@@ -183,6 +239,32 @@ $('#order').addEventListener('submit', async (e)=>{
 });
 
 renderTabs(); renderGrid(); renderCart();
+</script><!-- Оверлей (один раз на страницу) -->
+<div class="overlay" id="overlay"></div>
+
+<script>
+  const cart     = document.getElementById('cart');
+  const overlay  = document.getElementById('overlay');
+  const openBtn  = document.getElementById('openCart');  // кнопка "Корзина"
+  const closeBtn = document.getElementById('closeCart');  // кнопка ✕ в шапке корзины
+
+  function openCart() {
+    cart.classList.add('drawer_open');
+    overlay.classList.add('overlay_show');
+  }
+  function closeCart() {
+    cart.classList.remove('drawer_open');
+    overlay.classList.remove('overlay_show');
+  }
+
+  if (openBtn)  openBtn.addEventListener('click', openCart);
+  if (closeBtn) closeBtn.addEventListener('click', closeCart);
+  overlay.addEventListener('click', closeCart);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCart();
+  });
 </script>
+
 </body>
 </html>

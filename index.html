@@ -1,385 +1,404 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CloudBar Shop</title>
 
   <style>
-    /* ====== БАЗОВЫЕ СТИЛИ СТРАНИЦЫ ====== */
-    :root {
+    :root{
       --bg:#0e0f12;
-      --card:#14161b;
-      --muted:#8ea0b4;
-      --accent:#6f3cff;
-      --line:#2a2d35;
-      --white:#fff;
-      --success:#20c997;
+      --panel:#14161b;
+      --muted:#a8abb2;
+      --text:#eaeaea;
+      --brand:#6f3cff;
+      --border:#2a2d35;
+      --accent:#7d5dff;
+      --danger:#ff4d6d;
+      --ok:#3bd671;
     }
-    * { box-sizing: border-box }
-    html,body{ height:100% }
+
+    * { box-sizing: border-box; }
     body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:var(--bg);
-      color:var(--white);
-    }
-    .body-lock{             /* блокируем прокрутку при открытой корзине */
-      overflow:hidden;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0; background:var(--bg); color:var(--text);
     }
 
     header{
-      position:sticky; top:0; z-index:9;
-      background:var(--card);
-      border-bottom:1px solid var(--line);
-      padding:12px 16px;
-      display:flex; gap:12px; align-items:center;
+      position:sticky; top:0;
+      background:var(--panel); border-bottom:1px solid var(--border);
+      padding:12px 16px; display:flex; gap:12px; align-items:center; z-index:9;
     }
-    input[type="search"]{
-      flex:1; padding:10px 12px;
-      border-radius:10px; border:1px solid var(--line);
-      background:var(--bg); color:var(--white);
-      outline:none;
+    input[type=search]{
+      flex:1; padding:10px 12px; border-radius:10px;
+      border:1px solid var(--border); background:var(--bg); color:var(--text);
     }
 
-    /* ====== Табы категорий ====== */
-    .tabs{
-      display:flex; gap:8px;
-      flex-wrap:wrap;
-      padding:10px 16px;
-      border-bottom:1px solid var(--line);
-      background:var(--card);
-    }
-    .tab{
-      padding:8px 12px;
-      border:1px solid var(--line);
-      border-radius:20px;
-      cursor:pointer;
-      font-size:14px;
-      background:#14161b;
-      color:#eaeaea;
-    }
-    .tab.active{
-      background:var(--accent);
-      border-color:var(--accent);
-      color:#fff;
-    }
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px; border-bottom:1px solid var(--border); }
+    .tab{ padding:8px 12px; border:1px solid var(--border); border-radius:20px; cursor:pointer; font-size:14px; background:var(--panel); }
+    .tab.active{ background:var(--brand); border-color:var(--brand); color:#fff; }
 
-    /* ====== Сетка товаров ====== */
     .grid{
-      display:grid;
-      gap:16px;
-      padding:16px;
-      grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+      display:grid; gap:16px; padding:16px;
+      grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
     }
+
     .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:16px;
-      overflow:hidden;
-      display:flex; flex-direction:column; gap:8px;
+      border:1px solid var(--border); border-radius:16px; background:var(--panel);
+      overflow:hidden; display:flex; flex-direction:column;
     }
-    .card img{ width:100%; aspect-ratio:1/1; object-fit:cover; background:#0e0f12 }
-    .card .name{ display:flex; flex-direction:column; gap:6px; padding:12px }
-    .name .cat{ color:var(--muted); font-size:13px }
-    .price{ font-weight:700 }
-    .card .bottom{ display:flex; justify-content:space-between; align-items:center; padding:12px; border-top:1px solid var(--line) }
-    button{
-      cursor:pointer;
-      border:1px solid var(--accent);
-      background:var(--accent);
-      color:#fff;
-      border-radius:10px;
-      padding:8px 12px;
-    }
-    .muted{ opacity:.7 }
+    .card img{ width:100%; aspect-ratio:1/1; object-fit:cover; background:#0e0f12; }
+    .card .name{ padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .price{ font-weight:700; }
+    button{ cursor:pointer; border:1px solid var(--brand); background:var(--brand); color:#fff; border-radius:10px; padding:8px 10px; }
+    .muted{ opacity:.7; }
 
-    /* ====== Плавающая кнопка "Корзина" ====== */
-    .cartFab{
-      position:fixed; right:16px; bottom:16px;
-      background:var(--accent); color:#fff; border:none;
-      border-radius:20px; padding:12px 14px; font-weight:700;
-      z-index:5;
-    }
-
-    /* ====== ВЫЕЗЖАЮЩАЯ КОРЗИНА ====== */
+    /* ===== Drawer (корзина) ===== */
     .drawer{
-      position: fixed;
-      right: 0; top: 0; bottom: 0;
-      width: 380px; max-width: 100%;
-      background: var(--card);
-      border-left:1px solid var(--line);
-      transform: translateX(100%);    /* скрыта по умолчанию */
-      transition: transform .25s ease;
-      z-index: 10;
+      position:fixed; right:0; top:0; bottom:0;
+      width:380px; max-width:100%;
+      background:var(--panel);
+      border-left:1px solid var(--border);
+      transform:translateX(100%);            /* скрыта по умолчанию */
+      transition:transform .25s ease;
+      z-index:1000;
       display:flex; flex-direction:column;
     }
-    .drawer.open{ transform: translateX(0) }
+    .drawer_open{ transform:translateX(0); }
 
     .drawer header{
-      position: sticky; top: 0;
+      position: sticky; top:0;
       display:flex; align-items:center; justify-content:space-between;
-      background:var(--card);
-      padding:12px 16px; z-index:1;
-      border-bottom:1px solid var(--line);
+      background:var(--panel); padding:12px 16px; z-index:1; border-bottom:1px solid var(--border);
     }
     .drawer header .close{
-      width:34px; height:34px;
-      border:0; border-radius:8px; cursor:pointer;
-      background:var(--line); color:#fff;
+      width:34px; height:34px; border:0; border-radius:8px; cursor:pointer; background:var(--border); color:#fff;
     }
 
-    .drawer .list{ padding:12px; display:flex; flex-direction:column; gap:10px; overflow:auto }
-    .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; border:1px solid var(--line); border-radius:12px; padding:10px }
-    .qty{ display:flex; gap:6px; align-items:center }
-    .qty button{ width:28px; height:28px; border-radius:8px; padding:0; background:var(--line) }
-    .total{ padding:12px; border-top:1px solid var(--line); font-weight:700 }
+    .cartlist{ padding:12px; display:flex; flex-direction:column; gap:10px; overflow:auto; }
+    .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; border:1px solid var(--border); border-radius:12px; padding:10px; }
+    .qty{ display:flex; gap:6px; align-items:center; }
+    .qty button{ padding:6px 8px; border-radius:8px; }
+    .total{ padding:12px; border-top:1px solid var(--border); font-weight:700; }
 
-    .form{ display:flex; flex-direction:column; gap:10px; padding:12px }
+    .form{ padding:12px; display:flex; flex-direction:column; gap:10px; }
     .form input, .form select, .form textarea{
-      width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
-      background:var(--bg); color:#fff; outline:none;
+      padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text);
     }
+    .form textarea{ min-height:90px; resize:vertical; }
 
-    /* ====== ОВЕРЛЕЙ ====== */
+    .danger{ border-color:var(--danger) !important; }
+
+    /* ===== Overlay ===== */
     .overlay{
-      position:fixed; inset:0;
-      background:#0008;
-      opacity:0; pointer-events:none;
-      transition:opacity .25s;
-      z-index: 9;
+      position:fixed; inset:0; background:#0008;
+      opacity:0; pointer-events:none; transition:opacity .2s; z-index:999;
     }
-    .overlay_show{ opacity:1; pointer-events:auto }
+    .overlay_show{ opacity:1; pointer-events:auto; }
 
-    /* полезные мелочи */
-    .hidden{ display:none }
+    /* FAB корзины */
+    .fab{
+      position:fixed; right:16px; bottom:16px;
+      background:var(--brand); color:#fff; border:none; border-radius:20px; padding:12px 14px; font-weight:700;
+      box-shadow:0 6px 24px #0006;
+      z-index:3;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Поиск + кнопка корзины -->
   <header>
-    <input id="q" type="search" placeholder="Поиск..." />
-    <button id="openCart" class="cartFab">🛒 Корзина</button>
+    <input id="search" type="search" placeholder="Поиск..." />
   </header>
 
-  <!-- Категории -->
   <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
 
-  <!-- Сетка товаров -->
-  <main class="grid" id="grid"></main>
+  <!-- Плавающая кнопка "Корзина" -->
+  <button class="fab" id="openCart">🛒 Корзина</button>
 
-  <!-- Выезжающая корзина -->
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Drawer (корзина) -->
   <aside class="drawer" id="cart">
     <header>
-      <div style="font-weight:700">Корзина</div>
-      <button id="closeCart" class="close">✕</button>
+      <b>Корзина</b>
+      <button class="close" id="closeCart">✕</button>
     </header>
 
-    <div class="list" id="cartList"></div>
+    <div class="cartlist" id="cartList"></div>
     <div class="total">Итого: <span id="totalBox">0 Kč</span></div>
 
-    <!-- Форма заказа -->
     <form class="form" id="orderForm">
-      <select id="pay">
-        <option value="Онлайн-переводом">Онлайн-переводом</option>
-        <option value="Наличными курьеру">Наличными курьеру</option>
+      <select name="payment">
+        <option>Онлайн-переводом</option>
+        <option>Наличными курьеру</option>
       </select>
-      <select id="delivery">
-        <option value="Доставка">Доставка</option>
-        <option value="Самовывоз">Самовывоз</option>
+      <select name="delivery">
+        <option>Доставка</option>
+        <option>Самовывоз</option>
       </select>
-      <input id="fio" placeholder="Имя и фамилия" />
-      <input id="tg"  placeholder="@username в Telegram (по желанию)" />
-      <input id="phone" placeholder="Телефон" />
-      <input id="addr" placeholder="Адрес" />
-      <textarea id="comment" rows="3" placeholder="Комментарий"></textarea>
+
+      <input type="text"   name="name"      placeholder="Имя и фамилия" required />
+      <input type="text"   name="username"  placeholder="@username в Telegram (по желанию)" />
+      <input type="tel"    name="phone"     placeholder="Телефон" required />
+      <input type="text"   name="address"   placeholder="Адрес" />
+      <textarea            name="comment"   placeholder="Комментарий"></textarea>
+
       <button type="submit">Отправить заказ</button>
     </form>
   </aside>
 
-  <!-- Оверлей -->
-  <div class="overlay" id="overlay"></div>
-
   <script>
-    /***********************
-     * НАСТРОЙКИ/ДАННЫЕ
-     ***********************/
-    // TODO: сюда вставьте ваш URL веб-приложения Apps Script (Deploy → Web app → URL)
-    const GAS_URL = 'PASTE_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE';
+    /* =====================================================================
+       1) НАСТРОЙКА — подставь URL веб-приложения Google Apps Script
+       ===================================================================== */
+    const API_URL = 'https://script.google.com/macros/s/PASTE_YOUR_EXEC_URL/exec';
+    //                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    // Замени на свой URL из Deploy → Web app → URL
 
+
+    /* ======================== 2) ДАННЫЕ ======================== */
     const categories = [
-      { id:'all', name:'Все' },
-      { id:'bbg', name:'VOEX Blueberry Bubble Gum' },
-      { id:'coc', name:'VOEX Blueberry Coconut' },
-      { id:'ggr', name:'VOEX Green Grape Rose' },
-      { id:'jas', name:'VOEX Jasmine Raspberry' },
-      { id:'pink',name:'VOEX Pink Lemonade' },
+      { id: 'all', name: 'Все' },
+      { id: 'VOEX Blueberry Bubble Gum', name: 'VOEX Blueberry Bubble Gum' },
+      { id: 'VOEX Blueberry Coconut',    name: 'VOEX Blueberry Coconut' },
+      { id: 'VOEX Green Grape Rose',     name: 'VOEX Green Grape Rose' },
+      { id: 'VOEX Jasmine Raspberry',    name: 'VOEX Jasmine Raspberry' },
+      { id: 'VOEX Pink Lemonade',        name: 'VOEX Pink Lemonade' }
     ];
 
-    // ВАЖНО: имена картинок должны совпадать с файлами в /img/
     const products = [
-      { id:1, cat:'bbg', name:'VOEX Blueberry Bubble Gum', sub:'Черничная жевательная резинка', price:300, img:'blueberry-bubble-gum.jpg.jpg' },
-      { id:2, cat:'coc', name:'VOEX Blueberry Coconut',     sub:'Черника Кокос',                 price:300, img:'blueberry-coconut.jpg.jpg'   },
-      { id:3, cat:'ggr', name:'VOEX Green Grape Rose',       sub:'Зелёная виноградная роза',      price:300, img:'green-grape-rose.jpg.jpg'  },
-      { id:4, cat:'jas', name:'VOEX Jasmine Raspberry',      sub:'Жасминовая малина',             price:300, img:'jasmine-raspberry.jpg.jpg' },
-      { id:5, cat:'pink',name:'VOEX Pink Lemonade',          sub:'Розовый лимонад',               price:300, img:'pink-lemonade.jpg.jpg'     },
+      {
+        id: 'p1',
+        cat: 'VOEX Blueberry Bubble Gum',
+        title: 'VOEX Blueberry Bubble Gum',
+        subtitle: 'Черничная жевательная розинка',
+        price: 300,
+        img: 'img/blueberry-bubble-gum.jpg.jpg'
+      },
+      {
+        id: 'p2',
+        cat: 'VOEX Blueberry Coconut',
+        title: 'VOEX Blueberry Coconut',
+        subtitle: 'Черника Кокос',
+        price: 300,
+        img: 'img/blueberry-coconut.jpg.jpg'
+      },
+      {
+        id: 'p3',
+        cat: 'VOEX Green Grape Rose',
+        title: 'VOEX Green Grape Rose',
+        subtitle: 'Зелёная виноградная роза',
+        price: 300,
+        img: 'img/green-grape-rose.jpg.jpg'
+      },
+      {
+        id: 'p4',
+        cat: 'VOEX Jasmine Raspberry',
+        title: 'VOEX Jasmine Raspberry',
+        subtitle: 'Жасминовая малина',
+        price: 300,
+        img: 'img/jasmine-raspberry.jpg.jpg'
+      },
+      {
+        id: 'p5',
+        cat: 'VOEX Pink Lemonade',
+        title: 'VOEX Pink Lemonade',
+        subtitle: 'Розовый лимонад',
+        price: 300,
+        img: 'img/pink-lemonade.jpg.jpg'
+      }
     ];
 
+    /* ======================== 3) STATE ======================== */
     const state = {
-      cat:'all',
-      q:'',
-      cart: [] // {id, qty}
+      cat: 'all',
+      search: '',
+      cart: []  // {id,title,qty,price}
     };
 
-    /* ===== Утилиты ===== */
-    const money = v => `${v} Kč`;
-    const byId = id => document.getElementById(id);
-    const productById = id => products.find(p => p.id === id);
+    const $ = sel => document.querySelector(sel);
+    const tabs = $('#tabs');
+    const grid = $('#grid');
+    const search = $('#search');
 
-    /* ===== Рендер табов ===== */
+    /* ======================== 4) РЕНДЕР ======================== */
+    function money(v){ return `${v} Kč`; }
+
     function renderTabs(){
-      const tabs = byId('tabs');
       tabs.innerHTML = categories.map(c => `
-        <button class="tab ${state.cat===c.id?'active':''}" data-cat="${c.id}">
-          ${c.name}
-        </button>
+        <div class="tab ${state.cat===c.id?'active':''}" data-cat="${c.id}">${c.name}</div>
       `).join('');
     }
 
-    /* ===== Фильтрация и рендер сетки ===== */
-    function filt(p){
-      const byCat = state.cat==='all' || p.cat===state.cat;
-      const byQ   = !state.q || (p.name.toLowerCase()+p.sub.toLowerCase()).includes(state.q);
-      return byCat && byQ;
+    function filtered(){
+      const q = state.search.trim().toLowerCase();
+      return products.filter(p =>
+        (state.cat==='all'||p.cat===state.cat) &&
+        (!q || p.title.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q))
+      );
     }
 
     function renderGrid(){
-      const grid = byId('grid');
-      const items = products.filter(filt);
-      grid.innerHTML = items.map(it => `
-        <article class="card">
-          <img src="./img/${it.img}" alt="${it.name}" />
+      const list = filtered();
+      grid.innerHTML = list.map(it => `
+        <div class="card">
+          <img src="${it.img}" alt="${it.title}" />
           <div class="name">
-            <div class="cat">${categories.find(c=>c.id===it.cat)?.name ?? ''}</div>
-            <div>${it.name}</div>
-            <div class="muted">${it.sub}</div>
+            <div class="muted">${it.cat}</div>
+            <b>${it.title}</b>
+            <div class="muted">${it.subtitle}</div>
+            <div class="price">${money(it.price)}</div>
+            <button onclick="add('${it.id}')">Добавить в корзину</button>
           </div>
-          <div class="bottom">
-            <b class="price">${money(it.price)}</b>
-            <button onclick="add(${it.id})">Добавить в корзину</button>
-          </div>
-        </article>
+        </div>
       `).join('');
     }
 
-    /* ===== Корзина ===== */
+    /* ======================== 5) КОРЗИНА ======================== */
     function add(id){
-      const row = state.cart.find(r=>r.id===id);
-      if(row) row.qty++;
-      else state.cart.push({id, qty:1});
+      const prod = products.find(p=>p.id===id);
+      if(!prod) return;
+      const row = state.cart.find(x=>x.id===id);
+      if(row) row.qty += 1;
+      else state.cart.push({ id, title: prod.title, price: prod.price, qty:1 });
+
+      renderCart();
+      openCart();
+    }
+
+    function dec(id){
+      const row = state.cart.find(x=>x.id===id);
+      if(!row) return;
+      row.qty -= 1;
+      if(row.qty<=0) state.cart = state.cart.filter(x=>x.id!==id);
       renderCart();
     }
-    function inc(id){ const r=state.cart.find(x=>x.id===id); if(r){ r.qty++; renderCart();}}
-    function dec(id){ const r=state.cart.find(x=>x.id===id); if(!r) return; r.qty--; if(r.qty<=0) state.cart = state.cart.filter(x=>x.id!==id); renderCart();}
+    function inc(id){
+      const row = state.cart.find(x=>x.id===id);
+      if(row) row.qty += 1;
+      renderCart();
+    }
+
+    const cartList = $('#cartList');
+    const totalBox = $('#totalBox');
 
     function renderCart(){
-      const list = byId('cartList');
       if(!state.cart.length){
-        list.innerHTML = `<div class="muted">Пока пусто</div>`;
-      }else{
-        list.innerHTML = state.cart.map(item=>{
-          const p = productById(item.id);
-          return `
-            <div class="row">
-              <div style="flex:1">
-                <div style="font-weight:700">${p.name}</div>
-                <div class="muted">${p.sub}</div>
-              </div>
-              <div class="qty">
-                <button onclick="dec(${p.id})">−</button>
-                <b>${item.qty}</b>
-                <button onclick="inc(${p.id})">+</button>
-              </div>
-              <div style="width:80px; text-align:right"><b>${money(p.price*item.qty)}</b></div>
-            </div>
-          `;
-        }).join('');
+        cartList.innerHTML = `<div class="muted">Пока пусто</div>`;
+        totalBox.textContent = money(0);
+        return;
       }
+      cartList.innerHTML = state.cart.map(it => `
+        <div class="row">
+          <div style="flex:1">${it.title}</div>
+          <div class="qty">
+            <button onclick="dec('${it.id}')">−</button>
+            <b>${it.qty}</b>
+            <button onclick="inc('${it.id}')">+</button>
+          </div>
+          <b>${money(it.price*it.qty)}</b>
+        </div>
+      `).join('');
 
-      const total = state.cart.reduce((s,i)=> s + productById(i.id).price * i.qty, 0);
-      byId('totalBox').textContent = money(total);
+      const total = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+      totalBox.textContent = money(total);
     }
 
-    /* ===== ОТКРЫТИЕ/ЗАКРЫТИЕ КОРЗИНЫ (с оверлеем) ===== */
-    const cartEl   = byId('cart');
-    const overlay  = byId('overlay');
-    const openBtn  = byId('openCart');
-    const closeBtn = byId('closeCart');
+    /* ====== Drawer open/close ====== */
+    const cart = document.getElementById('cart');
+    const overlay = document.getElementById('overlay');
+    const openBtn = document.getElementById('openCart');
+    const closeBtn = document.getElementById('closeCart');
 
     function openCart(){
-      cartEl.classList.add('open');
+      cart.classList.add('drawer_open');
       overlay.classList.add('overlay_show');
-      document.body.classList.add('body-lock');
     }
     function closeCart(){
-      cartEl.classList.remove('open');
+      cart.classList.remove('drawer_open');
       overlay.classList.remove('overlay_show');
-      document.body.classList.remove('body-lock');
     }
-
-    openBtn  && openBtn.addEventListener('click', openCart);
-    closeBtn && closeBtn.addEventListener('click', closeCart);
+    if(openBtn)  openBtn.addEventListener('click', openCart);
+    if(closeBtn) closeBtn.addEventListener('click', closeCart);
     overlay.addEventListener('click', closeCart);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCart(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeCart(); });
 
-    /* ===== Поиск/табы ===== */
-    byId('q').addEventListener('input', (e)=>{ state.q = e.target.value.trim().toLowerCase(); renderGrid(); });
-    byId('tabs').addEventListener('click', (e)=>{
-      const btn = e.target.closest('.tab'); if(!btn) return;
-      state.cat = btn.dataset.cat; renderTabs(); renderGrid();
-    });
+    /* ======================== 6) ОТПРАВКА ЗАКАЗА ======================== */
+    const form = document.getElementById('orderForm');
 
-    /* ===== Отправка заказа в Apps Script ===== */
-    byId('orderForm').addEventListener('submit', async (e)=>{
+    form.addEventListener('submit', async (e)=>{
       e.preventDefault();
-      if(!state.cart.length){ alert('Корзина пуста'); return; }
 
-      const payload = {
-        items: state.cart.map(i=>{
-          const p = productById(i.id);
-          return { id:p.id, title:p.name, qty:i.qty, price_total:p.price*i.qty, currency:'Kč' }
-        }),
-        data:{
-          payment: byId('pay').value,
-          delivery: byId('delivery').value,
-          customer:{
-            name: byId('fio').value || '-',
-            username: byId('tg').value || '-',
-            phone: byId('phone').value || '-',
-            address: byId('addr').value || '-',
-          },
-          comment: byId('comment').value || '-'
-        }
+      if(!state.cart.length){
+        alert('Корзина пуста');
+        return;
+      }
+
+      const fd = new FormData(form);
+      const customer = {
+        name:     fd.get('name').trim(),
+        username: (fd.get('username')||'').replace(/^@+/,'').trim(),
+        phone:    fd.get('phone').trim(),
+        address:  fd.get('address').trim(),
+        comment:  fd.get('comment').trim()
+      };
+
+      // Простая подсветка необходимых полей
+      form.querySelectorAll('.danger').forEach(el=>el.classList.remove('danger'));
+      if(!customer.name)   form.querySelector('[name=name]').classList.add('danger');
+      if(!customer.phone)  form.querySelector('[name=phone]').classList.add('danger');
+      if(!customer.name || !customer.phone) return;
+
+      const order = {
+        currency: 'Kč',
+        total: state.cart.reduce((s,i)=>s+i.price*i.qty,0),
+        payment: fd.get('payment'),
+        delivery: fd.get('delivery'),
+        items: state.cart.map(row => ({
+          id: row.id,
+          title: row.title,
+          qty: row.qty,
+          price_total: row.price*row.qty
+        })),
+        customer
       };
 
       try{
-        const resp = await fetch(GAS_URL, {
+        const res = await fetch(API_URL, {
           method:'POST',
-          mode:'no-cors',                // чтобы не блокировалось CORS в GH Pages
-          body: JSON.stringify(payload)
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(order)
         });
-        // Даже при no-cors браузер может вернуть "opaque". Считаем отправленным.
-        alert('✅ Заказ отправлен!');
-        state.cart = []; renderCart(); closeCart();
+        const data = await res.json();
+        if(!data.ok) throw new Error(data.error||'Не удалось отправить');
+
+        alert('Заказ отправлен!');
+        state.cart = [];
+        renderCart();
+        closeCart();
+        form.reset();
       }catch(err){
         console.error(err);
-        alert('Не удалось отправить заказ. Проверьте доступность Apps Script URL.');
+        alert('Ошибка отправки: '+err.message);
       }
     });
 
-    /* ===== Первый рендер ===== */
-    renderTabs(); renderGrid(); renderCart();
+    /* ======================== 7) INIT ======================== */
+    tabs.addEventListener('click', (e)=>{
+      const cat = e.target.dataset.cat;
+      if(!cat) return;
+      state.cat = cat;
+      renderTabs(); renderGrid();
+    });
+    search.addEventListener('input', ()=>{ state.search = search.value; renderGrid(); });
+
+    // старт
+    renderTabs();
+    renderGrid();
+    renderCart();
   </script>
 </body>
 </html>

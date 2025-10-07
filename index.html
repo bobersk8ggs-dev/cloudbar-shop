@@ -1,1 +1,187 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CloudBar Shop</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#0e0f12;color:#eaeaea}
+  header{position:sticky;top:0;background:#14161b;border-bottom:1px solid #222;padding:12px 16px;display:flex;gap:12px;align-items:center;z-index:9}
+  input[type=search]{flex:1;padding:10px 12px;border-radius:10px;border:1px solid #2a2d35;background:#0e0f12;color:#eaeaea}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #222}
+  .tab{padding:8px 12px;border:1px solid #2a2d35;border-radius:20px;cursor:pointer;font-size:14px;background:#14161b}
+  .tab.active{background:#6f3cff;border-color:#6f3cff;color:#fff}
+  .grid{display:grid;gap:16px;padding:16px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .card{border:1px solid #2a2d35;border-radius:16px;background:#14161b;overflow:hidden;display:flex;flex-direction:column}
+  .card img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#0e0f12}
+  .card .p{padding:12px;display:flex;flex-direction:column;gap:6px}
+  .price{font-weight:700}
+  button{cursor:pointer;border:1px solid #6f3cff;background:#6f3cff;color:#fff;border-radius:10px;padding:8px 10px}
+  .muted{opacity:.7}
+  .cartfab{position:fixed;right:16px;bottom:16px;background:#6f3cff;color:#fff;border:none;border-radius:20px;padding:12px 14px;font-weight:700}
+  .drawer{position:fixed;right:0;top:0;bottom:0;width:380px;max-width:100%;background:#14161b;border-left:1px solid #2a2d35;transform:translateX(100%);transition:.25s;z-index:10;display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer header{position:sticky;top:0}
+  .cartlist{padding:12px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+  .row{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid #2a2d35;border-radius:12px;padding:10px}
+  .qty{display:flex;gap:6px;align-items:center}
+  .qty button{padding:2px 8px;border-radius:6px;background:#222;border-color:#333}
+  form{display:flex;flex-direction:column;gap:10px;padding:12px}
+  input,select,textarea{background:#0e0f12;color:#eaeaea;border:1px solid #2a2d35;border-radius:10px;padding:10px}
+  .total{padding:12px;border-top:1px solid #222;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <input id="q" type="search" placeholder="Поиск..." />
+  <button id="openCart">Корзина</button>
+</header>
 
+<div class="tabs" id="tabs"></div>
+<div class="grid" id="grid"></div>
+
+<button class="cartfab" id="fab">🧺 Корзина</button>
+
+<aside class="drawer" id="drawer">
+  <header>Корзина</header>
+  <div class="cartlist" id="cart"></div>
+  <div class="total" id="total"></div>
+  <form id="order">
+    <select name="payment">
+      <option>Онлайн-переводом</option>
+      <option>Наличными курьеру</option>
+    </select>
+    <select name="delivery">
+      <option>Доставка</option>
+      <option>Самовывоз</option>
+    </select>
+    <input name="name" placeholder="Имя и фамилия" required />
+    <input name="username" placeholder="@username в Telegram (по желанию)" />
+    <input name="phone" placeholder="Телефон" />
+    <input name="address" placeholder="Адрес" />
+    <textarea name="comment" placeholder="Комментарий"></textarea>
+    <button type="submit">Отправить заказ</button>
+  </form>
+</aside>
+
+<script>
+/* ====== Настройка ====== */
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbx4P7kHLxXLoKydNMzkqOumae5FpXyNACs1iI7MbBSsDBNNpvQsSby0njaB3BjNbMeRsQ/exec';  // <-- поставь URL из Apps Script
+const CURRENCY = 'Kč';                         // валюта для цен
+
+/* ====== Товары (пример) ====== */
+const PRODUCTS = [
+  {id:'p1', title:'GRAPE ENERGY',  price:300, cat:'ELFBAR 2000', img:'https://i.imgur.com/jqT8i8M.jpeg'},
+  {id:'p2', title:'BLUE RAZZ ICE', price:300, cat:'ELFBAR 2000', img:'https://i.imgur.com/BI4gSTu.jpeg'},
+  {id:'p3', title:'WATERMELON',   price:300, cat:'ELFBAR 15000', img:'https://i.imgur.com/FkXqzLN.jpeg'},
+  {id:'p4', title:'STRAWBERRY',    price:300, cat:'ELFBAR 15000', img:'https://i.imgur.com/3tH0WfZ.jpeg'}
+];
+
+let state = {cat:'Все', q:'', cart:{}};
+const cats = ['Все', ...[...new Set(PRODUCTS.map(p => p.cat))]];
+const $ = s => document.querySelector(s);
+const grid = $('#grid'), tabs = $('#tabs'), q = $('#q');
+const drawer = $('#drawer'), cartBox = $('#cart'), totalBox = $('#total');
+
+function money(x){ return `${x} ${CURRENCY}`; }
+function filtered(){
+  return PRODUCTS.filter(p =>
+    (state.cat==='Все' || p.cat===state.cat) &&
+    (state.q==='' || p.title.toLowerCase().includes(state.q.toLowerCase()))
+  );
+}
+function renderTabs(){
+  tabs.innerHTML = cats.map(c =>
+    `<div class="tab ${state.cat===c?'active':''}" data-cat="${c}">${c}</div>`
+  ).join('');
+}
+function renderGrid(){
+  grid.innerHTML = filtered().map(p => `
+    <div class="card">
+      <img src="${p.img}" alt="">
+      <div class="p">
+        <div class="muted">${p.cat}</div>
+        <div>${p.title}</div>
+        <div class="price">${money(p.price)}</div>
+        <button onclick="add('${p.id}')">Добавить в корзину</button>
+      </div>
+    </div>`).join('');
+}
+function add(id){ state.cart[id]=(state.cart[id]||0)+1; renderCart(); openCart(); }
+function dec(id){ if(state.cart[id]>1) state.cart[id]--; else delete state.cart[id]; renderCart(); }
+function renderCart(){
+  const items = Object.entries(state.cart).map(([id,qty])=>{
+    const p = PRODUCTS.find(x=>x.id===id);
+    return {...p, qty, sum: p.price*qty};
+  });
+  cartBox.innerHTML = items.length? items.map(it=>`
+    <div class="row">
+      <div style="flex:1">
+        <div class="muted">${it.cat}</div>
+        <div>${it.title}</div>
+        <div class="muted">${money(it.price)} × ${it.qty}</div>
+      </div>
+      <div class="qty">
+        <button onclick="dec('${it.id}')">-</button>
+        <b>${it.qty}</b>
+        <button onclick="add('${it.id}')">+</button>
+      </div>
+      <b>${money(it.sum)}</b>
+    </div>`).join('') : '<div class="muted">Пока пусто</div>';
+  const total = items.reduce((s,i)=>s+i.sum,0);
+  totalBox.textContent = 'Итого: '+ money(total);
+}
+function openCart(){ drawer.classList.add('open'); }
+function closeCart(){ drawer.classList.remove('open'); }
+
+tabs.addEventListener('click',e=>{
+  const cat=e.target.dataset.cat; if(!cat) return;
+  state.cat=cat; renderTabs(); renderGrid();
+});
+q.addEventListener('input', e=>{ state.q=e.target.value; renderGrid(); });
+$('#fab').onclick=$('#openCart').onclick=openCart;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCart(); });
+
+$('#order').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const form = Object.fromEntries(new FormData(e.target).entries());
+  const items = Object.entries(state.cart).map(([id,qty])=>{
+    const p = PRODUCTS.find(x=>x.id===id);
+    return {title:p.title, qty, price:p.price, price_total:p.price*qty};
+  });
+  const total = items.reduce((s,i)=>s+i.price_total,0);
+  const payload = {
+    currency: CURRENCY,
+    items, total,
+    payment: form.payment,
+    delivery: form.delivery,
+    customer: {
+      name: form.name,
+      username: form.username?.replace(/^@/,''),
+      phone: form.phone,
+      address: form.address,
+      comment: form.comment
+    }
+  };
+  try{
+    const r = await fetch(ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if(j.ok){
+      alert('Заказ отправлен! Мы свяжемся с вами в Telegram.');
+      state.cart={}; renderCart(); closeCart();
+    }else{
+      alert('Не удалось отправить заказ: '+(j.error||''));
+    }
+  }catch(err){
+    alert('Ошибка сети: '+err.message);
+  }
+});
+
+renderTabs(); renderGrid(); renderCart();
+</script>
+</body>
+</html>

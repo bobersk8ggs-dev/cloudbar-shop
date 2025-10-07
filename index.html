@@ -167,38 +167,8 @@ function renderCart(){
   const total = items.reduce((s,i)=>s+i.sum,0);
   totalBox.textContent = 'Итого: '+ money(total);
 }
-// добавь рядом с другими const'ами:
-const overlay = document.getElementById('overlay');
-const openBtn  = document.getElementById('openCart');   // если есть кнопка, которая открывает корзину
-const closeBtn = document.getElementById('closeCart');  // если есть крестик в шапке корзины
-
-function openCart() {
-  drawer.classList.add('open');          // твой класс для открытия панели
-  overlay.classList.add('overlay_show'); // показываем затемнение
-  document.body.classList.add('body-lock'); // блокируем прокрутку страницы
-}
-
-function closeCart() {
-  drawer.classList.remove('open');
-  overlay.classList.remove('overlay_show');
-  document.body.classList.remove('body-lock');
-}
-
-// обработчики (если их ещё нет ниже по коду)
-openBtn  && openBtn.addEventListener('click', openCart);
-closeBtn && closeBtn.addEventListener('click', closeCart);
-overlay.addEventListener('click', closeCart);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCart(); });
-
-
-tabs.addEventListener('click',e=>{
-  const cat=e.target.dataset.cat; if(!cat) return;
-  state.cat=cat; renderTabs(); renderGrid();
-});
-q.addEventListener('input', e=>{ state.q=e.target.value; renderGrid(); });
-$('#fab').onclick=$('#openCart').onclick=openCart;
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCart(); });
-
+function openCart(){ drawer.classList.add('open'); }
+function closeCart(){ drawer.classList.remove('open'); }
 $('#order').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const form = Object.fromEntries(new FormData(e.target).entries());
